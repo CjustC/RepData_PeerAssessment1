@@ -1,9 +1,10 @@
 ---
-title: "PA1_template.Rmd"
+title: "PA1_template_test.RMD"
 author: "Chana VanNice"
-date: "December 16, 2015"
+date: "December 21, 2015"
 output: html_document
 ---
+
 ## Introduction
 
 This document shows resluts for the Coursera: Reproducible Research - Peer Assignment 1. The assignment makes use of data from a personal activity monitoring device. The device used collects data at 5 minute intervals through out the day. The data consists of two months of data from an anonymous individual collected during the months of October and November, 2012 and includes the number of steps taken in 5 minute intervals each day. Results are presented in a report using a single R markdown document that can be processed by knitr and be transformed into an HTML file.  
@@ -249,4 +250,4 @@ ggplot(StepsPerDayComplete, aes(x=interval, y=mean)) +
 ```
 
 ## Conclusion  
-We can see that the activity increases through the weekdays with a spike that may indicate some sport level activity. One can infer that the increased activity through the weekdays is work related.  
+We can see that the activity increases through the weekdays with a spike that may indicate some sport level activity. One can infer that the increased activity through the weekdays is work related. 

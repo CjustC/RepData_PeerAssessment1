@@ -1,9 +1,10 @@
 ---
-title: "PA1_template.Rmd"
+title: "PA1_template_test.RMD"
 author: "Chana VanNice"
-date: "December 16, 2015"
+date: "December 21, 2015"
 output: html_document
 ---
+
 ## Introduction
 
 This document shows resluts for the Coursera: Reproducible Research - Peer Assignment 1. The assignment makes use of data from a personal activity monitoring device. The device used collects data at 5 minute intervals through out the day. The data consists of two months of data from an anonymous individual collected during the months of October and November, 2012 and includes the number of steps taken in 5 minute intervals each day. Results are presented in a report using a single R markdown document that can be processed by knitr and be transformed into an HTML file.  
@@ -22,7 +23,8 @@ This report answers the following questions:
 #### Load required libraries  
 To suppress loading messages set *message = FALSE*. Set global options *echo = TRUE* so others will be able to read the code and set *results = hold* to hold & push output to end of chunk.  
 
-```{r set_options, message = FALSE}
+
+```r
 library(knitr)
 opts_chunk$set(echo = TRUE, results = 'hold')
 library(data.table)
@@ -36,7 +38,8 @@ library(mice)
 **Load and preprocess the data**  
 
 If file not present, download & unpack file
-```{r download_file}
+
+```r
 DownURL <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
 if(!file.exists("activity.csv")) {
      download.file(DownURL, "Datafile.zip", method = "curl")
@@ -46,35 +49,58 @@ if(!file.exists("activity.csv")) {
 ```
 
 **Read in the Data**
-```{r read_data}
+
+```r
 data <- fread("activity.csv") # 'fread' reads data in quickly
 ```
 
 **Process/Transform the Data**  
 Convert *date* field to a Date class.
-```{r transform_data}
+
+```r
 data$date <- as.Date(data$date)
 ```
 
 View the structure of the data using *str()*. Pay special attention to the *class* of the variables.
-```{r check_data}
+
+```r
 str(data)
+```
+
+```
+## Classes 'data.table' and 'data.frame':	17568 obs. of  3 variables:
+##  $ steps   : int  NA NA NA NA NA NA NA NA NA NA ...
+##  $ date    : Date, format: "2012-10-01" "2012-10-01" ...
+##  $ interval: int  0 5 10 15 20 25 30 35 40 45 ...
+##  - attr(*, ".internal.selfref")=<externalptr>
 ```
 Notice the data contains NAs.  
 
 ## Analysis 1: Average Steps per Day  
 
 First, calculate the total number of steps for each day using *aggregate()*. Set the column names and check the data again using *head()*.
-```{r total_steps}
+
+```r
 stepsPerDay <- data.table(aggregate(data$steps, by = list(data$date), FUN = sum))
 names(stepsPerDay) <- c("date", "steps")
 head(stepsPerDay)
 ```
 
+```
+##          date steps
+## 1: 2012-10-01    NA
+## 2: 2012-10-02   126
+## 3: 2012-10-03 11352
+## 4: 2012-10-04 12116
+## 5: 2012-10-05 13294
+## 6: 2012-10-06 15420
+```
+
 ### What is mean total number of steps taken per day?  
 
 Display the results in a histogram and plot the **mean** for total number of steps taken per day.
-```{r hist_plot}
+
+```r
 ggplot(stepsPerDay, aes(x = steps)) +
      geom_histogram(fill = "light green", color = "white", binwidth = 700) +
      labs(title = "Total Steps Taken per Day", x = "Number of Steps per Day", y = "Frequency") +
@@ -82,8 +108,11 @@ ggplot(stepsPerDay, aes(x = steps)) +
      geom_vline(aes(xintercept = mean(steps, na.rm = TRUE)), linetype = "dashed", color = "blue", size = 0.5)
 ```
 
+![plot of chunk hist_plot](figure/hist_plot-1.png) 
+
 #### Calculate the **mean** and **median** of the number of steps taken per day.
-```{r steps_mean}
+
+```r
 stepsMean <- mean(stepsPerDay$steps, na.rm = TRUE)
 stepsMedian <- median(stepsPerDay$steps, na.rm = TRUE)
 ```
@@ -94,22 +123,27 @@ The mean is **10766.19** and the median is **10765**.
 2. Calculate which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps.  
 
 Calculate the average number of steps by intervals (5 min). Set column names and save to a data frame called *stepsInterval*.
-```{r steps_interval}
+
+```r
 stepsInterval <- data.table(aggregate(data$steps, by = list(data$interval), FUN = mean, na.rm = TRUE))
 names(stepsInterval) <- c("interval", "meanSteps")
 ```
 
 ### What is the average daily activity pattern?  
 Display the results in a time series (line) graph for the average daily activity pattern.
-```{r interval_plot}
+
+```r
 ggplot(stepsInterval, aes(x = interval)) +
      geom_line(color = "blue", aes(y = meanSteps)) +
      labs(title = "Average Daily Activity Pattern", x = "Interval", y = "Average number of Steps") + 
      theme_bw()
 ```
 
+![plot of chunk interval_plot](figure/interval_plot-1.png) 
+
 Find the 5 min interval with the maximum number of steps.
-```{r}
+
+```r
 max_interval <- stepsInterval[which.max(stepsInterval$meanSteps),]
 ```
 
@@ -125,7 +159,8 @@ The maiximum steps is **206** located in the **835th**.
      b. What is the impact of imputing missing data on the estimates of the total daily number of steps?  
  
 Find the total number of missing values in the data set using *is.na()* method and then *sum()*.
-```{r missing_values}
+
+```r
 missVals <- sum(is.na(data$steps))
 ```
 
@@ -134,27 +169,61 @@ The total number of *missing values* in the dataset are **2304**.
 #### Examine Data and the missing values a bit further to determine strategy to be used for filling in all of the missing values in the dataset.
 
 Build a subset of the number of Complete Cases - no missing values from the original dataset. Save for later use.
-```{r complete_cases}
+
+```r
 dataCompl <- data[complete.cases(data)]
 ```
 
 The total number of *Complete Cases* in the dataset are **15264**.  
 
 Look for a pattern of missing values in the original data by using *md.pattern()* funciton from the MICE package.
-```{r missing_pattern}
+
+```r
 md.pattern(data)
+```
+
+```
+##       date interval steps     
+## 15264    1        1     1    0
+##  2304    1        1     0    1
+##          0        0  2304 2304
 ```
 
 The pattern shows there are **15264** *Complete Cases* and **2304** *Missing Values* for *steps* data. 
 Confirm the total number of missing values by using the *aggr()* function from the MICE package.
-```{r missing_valuesTotal}
+
+```r
 missingVals <- aggr(data) # this function also produces plots for comparision
+```
+
+![plot of chunk missing_valuesTotal](figure/missing_valuesTotal-1.png) 
+
+```r
 missingVals # confirm the number of missing values
 ```
 
+```
+## 
+##  Missings in variables:
+##  Variable Count
+##     steps  2304
+```
+
 Visually examine a pattern to obtain the percentage of missing values using the VIM package. (optional)
-```{r missing_plot}
+
+```r
 aggr_plot <- aggr(data, col=c('navyblue','red'), numbers=TRUE, sortVars=TRUE, labels=names(data), cex.axis=.7, gap=3, ylab=c("Histogram of missing data","Pattern"))
+```
+
+![plot of chunk missing_plot](figure/missing_plot-1.png) 
+
+```
+## 
+##  Variables sorted by number of missings: 
+##  Variable     Count
+##     steps 0.1311475
+##      date 0.0000000
+##  interval 0.0000000
 ```
 
 Plot shows that **13%** of the steps data are missing in the original dataset.  
@@ -166,7 +235,8 @@ Substitute the *Missing Values* by taking the **mean** of *steps* from the *data
 #### 3. Create a new dataset that is equal to the original dataset but with the missing data filled in.
 
 Create a new variable in the main data set by merging it with step mean values And then assign the original value if it is not missing or the replacement value if it is missing.
-```{r replace_MissingData}
+
+```r
 # Merge original data frame w/ 'stepsInterval' dataframe
 compData <- merge(data, stepsInterval, by = "interval", all.y = FALSE)
 # Merge NA values w/ averages rounding up for integers
@@ -177,10 +247,21 @@ compData$meanSteps <- NULL # drop column
 head(compData) # check data
 ```
 
+```
+##    interval steps       date
+## 1:        0     2 2012-10-01
+## 2:        5     0 2012-10-01
+## 3:       10     0 2012-10-01
+## 4:       15     0 2012-10-01
+## 5:       20     0 2012-10-01
+## 6:       25     2 2012-10-01
+```
+
 #### Make a histogram of the total number of steps taken each day.  
 
 Calculate the total number for steps with the new imputed data. Display results in a time series plot.
-```{r newStepsPerDay}
+
+```r
 newStepsPerDay <- data.table(aggregate(compData$steps, by = list(compData$date),
                                       FUN = sum))
 names(newStepsPerDay) <- c("date", "sumSteps")
@@ -194,8 +275,21 @@ ggplot(newStepsPerDay, aes(x = sumSteps)) +
      theme_bw() 
 ```
 
+![plot of chunk newStepsPerDay](figure/newStepsPerDay-1.png) 
+
+```
+##          date sumSteps
+## 1: 2012-10-01    10762
+## 2: 2012-10-02      126
+## 3: 2012-10-03    11352
+## 4: 2012-10-04    12116
+## 5: 2012-10-05    13294
+## 6: 2012-10-06    15420
+```
+
 #### Calculate and report the **mean** and **median** for the total number of steps taken per day.  
-```{r plot_newStepsPerDay}
+
+```r
 newStepsMean <- mean(newStepsPerDay$sumSteps, na.rm = TRUE)
 newStepsMedian <- median(newStepsPerDay$sumSteps, na.rm = TRUE)
 ```
@@ -220,7 +314,8 @@ When comparing the *Before* and *After* **mean** and **median** calculations we 
 2. Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis).
 
 Create a new factor variable “dayType” indicating the two possible levels, weekday or weekend.
-```{r new_variable}
+
+```r
 compData$day <- as.factor(weekdays(compData$date))
 dayType <- function(day) {
      if ((day) %in% c("Saturday", "Sunday")) {
@@ -234,7 +329,8 @@ compData$dayType <- as.factor(sapply(compData$day, dayType))
 #### Are there differences in activity patterns between weekdays and weekends?
 
 Make a panel plot containing a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis).
-```{r plot_avgStepsDayType}
+
+```r
 library(plyr)
 
 StepsPerDayComplete <- ddply(compData, c("interval", "dayType"), summarise,
@@ -248,5 +344,7 @@ ggplot(StepsPerDayComplete, aes(x=interval, y=mean)) +
      theme(legend.position="none")
 ```
 
+![plot of chunk plot_avgStepsDayType](figure/plot_avgStepsDayType-1.png) 
+
 ## Conclusion  
-We can see that the activity increases through the weekdays with a spike that may indicate some sport level activity. One can infer that the increased activity through the weekdays is work related.  
+We can see that the activity increases through the weekdays with a spike that may indicate some sport level activity. One can infer that the increased activity through the weekdays is work related. 
